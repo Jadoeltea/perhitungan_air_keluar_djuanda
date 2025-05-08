@@ -218,31 +218,26 @@ with tab2:
     
     st.divider()
     
-    # Manual time input
+    # Manual date and time input
     st.subheader("Waktu Pengiriman")
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
+    
     with col1:
-        jam = st.number_input("Jam", min_value=0, max_value=23, value=current_time.hour)
+        selected_date = st.date_input(
+            "Tanggal",
+            value=current_time.date(),
+            format="DD/MM/YYYY"
+        )
     with col2:
+        jam = st.number_input("Jam", min_value=0, max_value=23, value=current_time.hour)
+    with col3:
         menit = st.number_input("Menit", min_value=0, max_value=59, value=current_time.minute)
     
-    # Format messages differently for WhatsApp and Telegram
-    telegram_message = f"""/input
-{hari[day_en]}, {current_time.strftime('%d')} {bulan[month_en]} {current_time.strftime('%Y')}
-Jam : {jam:02d}:{menit:02d} WIB
-Bendungan Ir.H.Djuanda
-TMA Waduk : {tma:.2f} mdpl
-TMA Tailrace : {trc:.2f} mdpl
-Turbin : {active_units} ({','.join(active_unit_numbers)}) Unit
-Total Beban : {sum(beban):.2f} MW
-Bukaan Hollow jet Valve(HJV)
-Kiri : {hjv_kiri:.1f}% Kanan : {hjv_kanan:.1f}%
-Debit Turbin : {L12:.3f} m³/s
-Debit Limpasan : {L13:.3f} m³/s
-Debit HJV : {L14:.3f} m³/s
-Debit total Sesaat : {L15:.3f} m³/s"""
-
-    whatsapp_message = f"""{hari[day_en]}, {current_time.strftime('%d')} {bulan[month_en]} {current_time.strftime('%Y')}
+    # Format the messages with selected date
+    day_en = selected_date.strftime('%A')
+    month_en = selected_date.strftime('%B')
+    
+    whatsapp_message = f"""{hari[day_en]}, {selected_date.strftime('%d')} {bulan[month_en]} {selected_date.strftime('%Y')}
 Jam : {jam:02d}:{menit:02d} WIB
 Bendungan Ir.H.Djuanda
 TMA Waduk : {tma:.2f} mdpl
