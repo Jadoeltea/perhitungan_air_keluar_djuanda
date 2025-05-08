@@ -56,11 +56,11 @@ def calculate_hjv_debit(opening_percent, res_level):
     except ValueError:
         return 0.0
 
-st.set_page_config(page_title="Perhitungan Air Keluar Bendungan Ir. H. Djuanda", layout="wide")
-st.title("Perhitungan Air Keluar Bendungan Ir. H. Djuanda")
+st.set_page_config(page_title="Perhitungan Debit Sesaat Bendungan Ir. H. Djuanda", layout="wide")
+st.title("Perhitungan Debit Sesaat Bendungan Ir. H. Djuanda")
 
 # Create tabs for navigation
-tab1, tab2, tab3 = st.tabs(["Input Data", "Hasil Perhitungan", "Detail Nilai R"])
+tab1, tab2 = st.tabs(["Input Data", "Hasil Perhitungan"])
 
 with tab1:
     st.markdown('''<span style="color:yellow; background-color:black; font-weight:bold">
@@ -314,18 +314,3 @@ Debit total Sesaat : {L15:.3f} m³/s"""
         st.code(whatsapp_message)
         st.subheader("Format Telegram")
         st.code(telegram_message)
-
-with tab3:
-    st.subheader("Nilai Efisiensi per Unit")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        for i in range(3):
-            st.metric(f"R Unit {unit_list[i]}", f"{R[i]:,.5f}")
-    
-    with col2:
-        for i in range(3, 6):
-            st.metric(f"R Unit {unit_list[i]}", f"{R[i]:,.5f}")
-    
-    st.divider()
-    st.metric("(Koreksi Head)", f"{R5:,.5f}")
