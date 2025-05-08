@@ -233,7 +233,7 @@ Bukaan Hollow jet Valve(HJV)
 Kiri : {hjv_kiri:.1f}% Kanan : {hjv_kanan:.1f}%
 Debit Turbin : {L12:.3f} m³/s
 Debit Limpasan : {L13:.3f} m³/s
-Debit HJV : {L14:.3f} m³/s(tabel dois)
+Debit HJV : {L14:.3f} m³/s
 Debit total Sesaat : {L15:.3f} m³/s"""
 
     whatsapp_message = f"""{hari[day_en]}, {current_time.strftime('%d')} {bulan[month_en]} {current_time.strftime('%Y')}
