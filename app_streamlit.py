@@ -2,6 +2,8 @@ import streamlit as st
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 import urllib.parse  
+from datetime import datetime, timedelta, timezone
+import pytz
 
 # Move interpolation setup to top
 def setup_hjv_interpolator():
@@ -189,9 +191,9 @@ with tab2:
 
     st.divider()
     
-    # Get current date and time
-    from datetime import datetime
-    current_time = datetime.now()
+    # Get current date and time in WIB timezone
+    jakarta_tz = pytz.timezone('Asia/Jakarta')
+    current_time = datetime.now(jakarta_tz)
     
     # Indonesian day names mapping
     hari = {
@@ -220,16 +222,6 @@ with tab2:
         'December': 'Desember'
     }
     
-    # Format the message with Indonesian date
-    day_en = current_time.strftime('%A')
-    month_en = current_time.strftime('%B')
-    
-    # Count active units
-    active_units = sum(1 for b in beban if b > 0)
-    active_unit_numbers = [str(i+1) for i, b in enumerate(beban) if b > 0]
-    
-    st.divider()
-    
     # Manual date and time input
     st.subheader("Waktu Pengiriman")
     col1, col2, col3 = st.columns(3)
@@ -245,6 +237,18 @@ with tab2:
     with col3:
         menit = st.number_input("Menit", min_value=0, max_value=59, value=current_time.minute)
     
+    # Now we can use selected_date for day and month formatting
+    day_en = selected_date.strftime('%A')
+    month_en = selected_date.strftime('%B')
+    
+    # Calculate active units before message formatting
+    active_unit_numbers = []
+    active_units = 0
+    for i, b in enumerate(beban):
+        if b > 0:
+            active_units += 1
+            active_unit_numbers.append(unit_list[i])
+
     # Format the messages with selected date and handle None values
     whatsapp_message = f"""{hari[day_en]}, {selected_date.strftime('%d')} {bulan[month_en]} {selected_date.strftime('%Y')}
 Jam : {jam:02d}:{menit:02d} WIB
