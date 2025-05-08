@@ -70,42 +70,53 @@ with tab1:
     st.subheader("Data Utama")
     col1, col2 = st.columns(2)
     with col1:
-        tma = st.number_input("Tinggi Muka Air Waduk (mdpl)", value=106.12, step=0.01, format="%.2f")
+        tma = st.number_input("Tinggi Muka Air Waduk (mdpl)", 
+                             value=None,
+                             step=0.01, 
+                             format="%.2f")
     with col2:
-        trc = st.number_input("Tailrace (mdpl)", value=27.50, step=0.01, format="%.2f")
+        trc = st.number_input("Tailrace (mdpl)", 
+                             value=None,
+                             step=0.01, 
+                             format="%.2f")
     
-    # Calculate head automatically
-    tinggi_jatuh = tma - trc
+    # Calculate head automatically with None check
+    tinggi_jatuh = (tma or 0) - (trc or 0)  # Use 0 if None for calculations
     st.info(f"Tinggi Jatuh (head) = {tinggi_jatuh:.2f} m")
 
     st.subheader("Data Hollow Cone Valve")
     col1, col2 = st.columns(2)
     with col1:
-        hjv_kiri = st.number_input("HCV Kiri (%)", value=8, step=1)
+        hjv_kiri = st.number_input("HCV Kiri (%)", 
+                                  value=None,
+                                  step=1)
         debit_hjv_kiri = calculate_hjv_debit(hjv_kiri, tma)
         st.write(f"Debit HCV Kiri: {debit_hjv_kiri:.2f} m³/det")
 
     with col2:
-        hjv_kanan = st.number_input("HCV Kanan (%)", value=8, step=1)
+        hjv_kanan = st.number_input("HCV Kanan (%)", 
+                                   value=None,
+                                   step=1)
         debit_hjv_kanan = calculate_hjv_debit(hjv_kanan, tma)
         st.write(f"Debit HCV Kanan: {debit_hjv_kanan:.2f} m³/det")
 
-    # Display total HJV debit
-    total_hjv = debit_hjv_kiri + debit_hjv_kanan
+    # Display total HJV debit with None check
+    total_hjv = (debit_hjv_kiri or 0) + (debit_hjv_kanan or 0)  # Use 0 if None
     st.info(f"Total Debit HCV = {total_hjv:.2f} m³/det")
 
     # Input Beban per Unit section
     st.subheader("Input Beban per Unit")
     unit_list = ["I", "II", "III", "IV", "V", "VI"]
-    beban_default = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     beban = []
 
     # Replace the horizontal columns with vertical layout
     for i in range(6):
-        beban_i = st.number_input(f"Beban Unit {unit_list[i]} (mW)", 
-                                value=beban_default[i], 
-                                key=f"beban_{i}")
-        beban.append(beban_i)
+        beban_i = st.number_input(f"Beban Unit {unit_list[i]} (mW)",
+                                 value=None, 
+                                 step=0.01,
+                                 format="%.2f",
+                                 key=f"beban_{i}")
+        beban.append(beban_i or 0.0)  # Use 0.0 if None for calculations
     
     # Display total beban
     total_beban = sum(beban)
@@ -148,11 +159,12 @@ if has_low_beban:
 else:
     L12 = sum(L)
 
-# L13
-if tma <= 106.9:
+# L13 calculation with None check
+if tma is None or tma <= 106.9:
     L13 = 0
 else:
     L13 = 231.2*((tma-106.9)**1.5) + 15.8*((tma-106.9)**2.5)
+
 # L14
 L14 = total_hjv  # Use the total HJV debit
 # L15
@@ -233,19 +245,16 @@ with tab2:
     with col3:
         menit = st.number_input("Menit", min_value=0, max_value=59, value=current_time.minute)
     
-    # Format the messages with selected date
-    day_en = selected_date.strftime('%A')
-    month_en = selected_date.strftime('%B')
-    
+    # Format the messages with selected date and handle None values
     whatsapp_message = f"""{hari[day_en]}, {selected_date.strftime('%d')} {bulan[month_en]} {selected_date.strftime('%Y')}
 Jam : {jam:02d}:{menit:02d} WIB
 Bendungan Ir.H.Djuanda
-TMA Waduk : {tma:.2f} mdpl
-TMA Tailrace : {trc:.2f} mdpl
+TMA Waduk : {tma if tma is not None else 0:.2f} mdpl
+TMA Tailrace : {trc if trc is not None else 0:.2f} mdpl
 Turbin : {active_units} ({','.join(active_unit_numbers)}) Unit
 Total Beban : {sum(beban):.2f} MW
 Bukaan Hollow jet Valve(HJV)
-Kiri : {hjv_kiri:.1f}% Kanan : {hjv_kanan:.1f}%
+Kiri : {hjv_kiri if hjv_kiri is not None else 0:.1f}% Kanan : {hjv_kanan if hjv_kanan is not None else 0:.1f}%
 Debit Turbin : {L12:.3f} m³/s
 Debit Limpasan : {L13:.3f} m³/s
 Debit HJV : {L14:.3f} m³/s
