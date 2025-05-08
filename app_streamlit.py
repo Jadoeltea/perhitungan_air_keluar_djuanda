@@ -94,9 +94,10 @@ with tab1:
     total_hjv = debit_hjv_kiri + debit_hjv_kanan
     st.info(f"Total Debit HCV = {total_hjv:.2f} m³/det")
 
+    # Input Beban per Unit section
     st.subheader("Input Beban per Unit")
     unit_list = ["I", "II", "III", "IV", "V", "VI"]
-    beban_default = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # Changed all defaults to 0
+    beban_default = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     beban = []
 
     # Replace the horizontal columns with vertical layout
@@ -105,7 +106,12 @@ with tab1:
                                 value=beban_default[i], 
                                 key=f"beban_{i}")
         beban.append(beban_i)
+    
+    # Display total beban
+    total_beban = sum(beban)
+    st.info(f"Total Beban = {total_beban:.2f} MW")
 
+    
 # Rumus R5
 R5 = -0.32675 + 3.5945*tinggi_jatuh - 0.0463189*tinggi_jatuh**2 + 0.0001975*tinggi_jatuh**3
 
