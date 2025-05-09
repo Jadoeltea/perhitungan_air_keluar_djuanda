@@ -108,7 +108,8 @@ with tab1:
 
     # Input Beban per Unit section
     st.subheader("Input Beban per Unit")
-    unit_list = ["I", "II", "III", "IV", "V", "VI"]
+    unit_list = ["I", "II", "III", "IV", "V", "VI"]  # Keep Roman numerals for display
+    unit_numbers = ["1", "2", "3", "4", "5", "6"]    # Add regular numbers for message
     beban = []
 
     # Replace the horizontal columns with vertical layout
@@ -247,7 +248,7 @@ with tab2:
     for i, b in enumerate(beban):
         if b > 0:
             active_units += 1
-            active_unit_numbers.append(unit_list[i])
+            active_unit_numbers.append(unit_numbers[i])  # Use regular numbers instead of Roman numerals
 
     # Format the messages with selected date and handle None values
     whatsapp_message = f"""{hari[day_en]}, {selected_date.strftime('%d')} {bulan[month_en]} {selected_date.strftime('%Y')}
