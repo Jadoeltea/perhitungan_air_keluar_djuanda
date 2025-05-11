@@ -1,6 +1,6 @@
 import streamlit as st
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import RegularGridInterpolator, interp1d
 import urllib.parse  
 from datetime import datetime, timedelta, timezone
 import pytz
@@ -48,8 +48,39 @@ def setup_hjv_interpolator():
     
     return RegularGridInterpolator((y_vals, x_vals), z_matrix)
 
-# Initialize interpolator at top level
+def setup_el_interpolators():
+    # Data EL, CAP, and AREA
+    el = np.array([
+        75.00, 76.00, 77.00, 78.00, 79.00, 80.00, 81.00, 82.00, 83.00, 84.00,
+        85.00, 86.00, 87.00, 88.00, 89.00, 90.00, 91.00, 92.00, 93.00, 94.00,
+        95.00, 96.00, 97.00, 98.00, 99.00, 100.00, 101.00, 102.00, 103.00,
+        104.00, 105.00, 106.00, 107.00, 108.00, 109.00, 110.00, 111.00
+    ])
+
+    cap = np.array([
+        579, 614, 650, 688, 727, 768, 810, 854, 899, 946,
+        995, 1045, 1096, 1149, 1204, 1260, 1317, 1377, 1437, 1500,
+        1563, 1629, 1695, 1764, 1834, 1905, 1978, 2053, 2129,
+        2206, 2285, 2366, 2448, 2531, 2617, 2703, 2792
+    ])
+
+    area = np.array([
+        36.82, 38.08, 39.34, 40.62, 41.90, 43.19, 44.49, 45.80, 47.12, 48.45,
+        49.78, 51.13, 52.48, 53.84, 55.21, 56.59, 57.97, 59.37, 60.77, 62.18,
+        63.60, 65.03, 66.47, 67.92, 69.37, 70.84, 72.31, 73.79, 75.28,
+        76.78, 78.29, 79.80, 81.33, 82.86, 84.40, 85.95, 87.51
+    ])
+
+    # Create interpolators
+    el_to_cap_interpolator = interp1d(el, cap, kind='linear', fill_value="extrapolate")
+    cap_to_el_interpolator = interp1d(cap, el, kind='linear', fill_value="extrapolate")
+    el_to_area_interpolator = interp1d(el, area, kind='linear', fill_value="extrapolate")
+
+    return el_to_cap_interpolator, cap_to_el_interpolator, el_to_area_interpolator
+
+# Initialize interpolators
 interpolator = setup_hjv_interpolator()
+el_to_cap_interpolator, cap_to_el_interpolator, el_to_area_interpolator = setup_el_interpolators()
 
 def calculate_hjv_debit(opening_percent, res_level):
     """Calculate HJV debit based on opening percentage and reservoir level"""
@@ -62,7 +93,7 @@ st.set_page_config(page_title="Perhitungan Debit Sesaat Bendungan Ir. H. Djuanda
 st.title("Perhitungan Debit Sesaat Bendungan Ir. H. Djuanda")
 
 # Create tabs for navigation
-tab1, tab2 = st.tabs(["Input Data", "Hasil Perhitungan"])
+tab1, tab2, tab3 = st.tabs(["Input Data", "Hasil Perhitungan", "Simulasi Harian"])
 
 with tab1:
     st.markdown('''<span style="color:yellow; background-color:black; font-weight:bold">
@@ -300,3 +331,169 @@ Debit total Sesaat : {L15:.3f} m³/s"""
     # Preview message
     with st.expander("Preview Pesan"):
         st.code(whatsapp_message)
+
+with tab3:
+    st.subheader("Simulasi TMA")
+    
+    # Add time input section first
+    st.subheader("Waktu Pengiriman")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        selected_date_sim = st.date_input(
+            "Tanggal",
+            value=current_time.date(),
+            format="DD/MM/YYYY",
+            key="date_sim"
+        )
+    with col2:
+        jam_sim = st.number_input("Jam", min_value=0, max_value=23, value=current_time.hour, key="jam_sim")
+    with col3:
+        menit_sim = st.number_input("Menit", min_value=0, max_value=59, value=current_time.minute, key="menit_sim")
+    
+    st.divider()  # Add divider between time input and simulation inputs
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        tma_awal = st.number_input("TMA awal (mdpl)", 
+                                  value=None,
+                                  step=0.01,
+                                  format="%.2f",
+                                  key="tma_sim")
+        am_total = st.number_input("AM Total (m³/det)", 
+                                  value=None,
+                                  step=0.01,
+                                  format="%.2f")
+        limpasan = st.number_input("Limpasan (m³/det)", 
+                                 value=None,
+                                 step=0.01,
+                                 format="%.2f")
+        ak_turbin = st.number_input("AK Turbin (m³/det)", 
+                                  value=None,
+                                  step=0.01,
+                                  format="%.2f")
+
+    with col2:
+        hjv_kiri_sim = st.number_input("HCV Kiri (%)", 
+                                      value=None,
+                                      step=1,
+                                      key="hjv_kiri_sim")
+        hjv_kanan_sim = st.number_input("HCV Kanan (%)", 
+                                       value=None,
+                                       step=1,
+                                       key="hjv_kanan_sim")
+        
+        # Calculate HJV debit
+        debit_hjv_kiri_sim = calculate_hjv_debit(hjv_kiri_sim, tma_awal)
+        debit_hjv_kanan_sim = calculate_hjv_debit(hjv_kanan_sim, tma_awal)
+        total_hjv_sim = (debit_hjv_kiri_sim or 0) + (debit_hjv_kanan_sim or 0)
+
+    # Calculations
+    ak_hjv = total_hjv_sim  # HJV total debit
+    ak_total = (limpasan or 0) + (ak_turbin or 0) + ak_hjv  # Include HJV in total outflow
+    delta_q = (am_total or 0) - ak_total  # AM Total - AK Total
+    delta_s = delta_q * 86400  # Convert to daily volume
+    
+    # Calculate TMA akhir first
+    if tma_awal is not None:
+        try:
+            # Convert TMA awal to capacity using el_to_cap_interpolator
+            capacity_awal = float(el_to_cap_interpolator(tma_awal))
+            
+            # Calculate new capacity
+            delta_volume = delta_s/1000000  # Convert to MCM
+            capacity_akhir = capacity_awal + delta_volume
+            
+            # Convert new capacity back to elevation using cap_to_el_interpolator
+            tma_akhir = float(cap_to_el_interpolator(capacity_akhir))
+        except:
+            st.error("Error dalam perhitungan TMA. Periksa nilai input.")
+            capacity_awal = 0
+            tma_akhir = 0
+    else:
+        capacity_awal = 0
+        tma_akhir = 0
+    
+    # Then display results
+    st.divider()
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.metric("HCV Total (m³/det)", f"{total_hjv_sim:.3f}")
+        st.metric("AK Total (m³/det)", f"{ak_total:.3f}")
+        st.metric("TMA awal (mdpl)", f"{tma_awal if tma_awal else 0:.2f}")
+    
+    with col2:
+        st.metric("ΔQ (m³/jam)", f"{delta_q:.3f}")
+        st.metric("ΔS = I ± O (m³)", f"{delta_s:.3f}")  # Show full number with 3 decimal places
+        st.metric("TMA akhir (mdpl)", f"{tma_akhir:.2f}")
+
+    st.divider()
+    
+    # Interpretation section
+    st.subheader("📉 Interpretasi")
+    
+    # Generate interpretation text
+    if delta_q is not None and tma_awal is not None and tma_akhir is not None:
+        if delta_q < 0:
+            flow_text = "lebih banyak air keluar daripada masuk"
+        elif delta_q > 0:
+            flow_text = "lebih banyak air masuk daripada keluar"
+        else:
+            flow_text = "jumlah air masuk sama dengan air keluar"
+            
+        tma_change = (tma_akhir - tma_awal) * 100  # convert to cm
+        volume_change = abs(delta_s / 1000000)  # convert to million m³
+        
+        interpretation = f"""
+        • Karena ΔQ {'positif' if delta_q > 0 else 'negatif'}, artinya {flow_text}.
+        
+        • Waduk {'mendapat' if delta_q > 0 else 'kehilangan'} ± {volume_change:.3f} m³ air dalam 24 jam.
+        
+        • TMA {'naik' if tma_change > 0 else 'turun'} dari {tma_awal:.2f} m menjadi {tma_akhir:.2f} m ({abs(tma_change):.0f} cm).
+        
+        • {'Terjadi limpasan' if tma_awal > 106.9 else 'Tidak ada limpasan'} karena TMA {'sudah' if tma_awal > 106.9 else 'belum'} menyentuh elevasi spillway.
+        """
+        
+        st.markdown(interpretation)
+        
+        # Create WhatsApp message with the same interpretation
+        sim_message = f"""Simulasi Harian TMA Waduk Ir. H. Djuanda
+{hari[selected_date_sim.strftime('%A')]}, {selected_date_sim.strftime('%d')} {bulan[selected_date_sim.strftime('%B')]} {selected_date_sim.strftime('%Y')}
+Jam : {jam_sim:02d}:{menit_sim:02d} WIB
+
+TMA Awal: {tma_awal:.2f} mdpl
+AM Total: {am_total or 0:.2f} m³/det
+AK Total: {ak_total:.2f} m³/det 
+(Turbin: {ak_turbin or 0:.2f}, 
+Limpasan: {limpasan or 0:.2f}, 
+HCV: {total_hjv_sim:.2f})
+ΔQ: {delta_q:.2f} m³/det
+ΔS: {delta_s:.2f} m³
+TMA Akhir: {tma_akhir:.2f} mdpl
+
+{interpretation}"""
+
+        # Show WhatsApp button only if we have valid data
+        whatsapp_sim_url = f"https://wa.me/?text={urllib.parse.quote(sim_message)}"
+        
+        st.divider()
+        col1, col2, col3 = st.columns([1,2,1])
+        
+        with col2:
+            st.markdown(f'''
+            <a href="{whatsapp_sim_url}" target="_blank">
+                <button style="background-color: #25D366; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+                </svg>
+                Kirim ke WhatsApp
+                </button>
+            </a>
+            ''', unsafe_allow_html=True)
+            
+        # Preview message
+        with st.expander("Preview Pesan"):
+            st.code(sim_message)
+    else:
+        st.info("Masukkan data untuk melihat interpretasi")
