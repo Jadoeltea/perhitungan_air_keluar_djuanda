@@ -372,6 +372,12 @@ with tab3:
                                   value=None,
                                   step=0.01,
                                   format="%.2f")
+        # Add time duration input
+        duration_hours = st.number_input("Durasi (jam)", 
+                                       value=24,  # default to 24 hours
+                                       min_value=1,
+                                       max_value=72,
+                                       step=1)
 
     with col2:
         hjv_kiri_sim = st.number_input("HCV Kiri (%)", 
@@ -392,7 +398,8 @@ with tab3:
     ak_hjv = total_hjv_sim  # HJV total debit
     ak_total = (limpasan or 0) + (ak_turbin or 0) + ak_hjv  # Include HJV in total outflow
     delta_q = (am_total or 0) - ak_total  # AM Total - AK Total
-    delta_s = delta_q * 86400  # Convert to daily volume
+    seconds = duration_hours * 3600  # Convert hours to seconds
+    delta_s = delta_q * seconds  # Use converted seconds instead of hardcoded 86400
     
     # Calculate TMA akhir first
     if tma_awal is not None:
@@ -448,7 +455,7 @@ with tab3:
         interpretation = f"""
         • Karena ΔQ {'positif' if delta_q > 0 else 'negatif'}, artinya {flow_text}.
         
-        • Waduk {'mendapat' if delta_q > 0 else 'kehilangan'} ± {volume_change:.3f} m³ air dalam 24 jam.
+        • Waduk {'mendapat' if delta_q > 0 else 'kehilangan'} ± {volume_change:.3f} m³ air dalam {duration_hours} jam.
         
         • TMA {'naik' if tma_change > 0 else 'turun'} dari {tma_awal:.2f} m menjadi {tma_akhir:.2f} m ({abs(tma_change):.0f} cm).
         
