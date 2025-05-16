@@ -90,6 +90,82 @@ def calculate_hjv_debit(opening_percent, res_level):
         return 0.0
 
 st.set_page_config(page_title="Perhitungan Debit Sesaat Bendungan Ir. H. Djuanda", layout="wide")
+
+st.markdown("""
+<script>
+    // Fungsi untuk menyimpan data form
+    function simpanDataForm() {
+        const inputs = {
+            'tma': document.querySelector('input[aria-label="Tinggi Muka Air Waduk (mdpl)"]')?.value,
+            'trc': document.querySelector('input[aria-label="Tailrace (mdpl)"]')?.value,
+            'hjv_kiri': document.querySelector('input[aria-label="HCV Kiri (%)"]')?.value,
+            'hjv_kanan': document.querySelector('input[aria-label="HCV Kanan (%)"]')?.value,
+            'beban_1': document.querySelector('input[aria-label="Beban Unit I (mW)"]')?.value,
+            'beban_2': document.querySelector('input[aria-label="Beban Unit II (mW)"]')?.value,
+            'beban_3': document.querySelector('input[aria-label="Beban Unit III (mW)"]')?.value,
+            'beban_4': document.querySelector('input[aria-label="Beban Unit IV (mW)"]')?.value,
+            'beban_5': document.querySelector('input[aria-label="Beban Unit V (mW)"]')?.value,
+            'beban_6': document.querySelector('input[aria-label="Beban Unit VI (mW)"]')?.value,
+        };
+        localStorage.setItem('formData', JSON.stringify(inputs));
+    }
+
+    // Fungsi untuk memulihkan data form
+    function pulihkanDataForm() {
+        const saved = localStorage.getItem('formData');
+        if (saved) {
+            const inputs = JSON.parse(saved);
+            Object.entries(inputs).forEach(([key, value]) => {
+                if (value) {
+                    const input = document.querySelector(`input[aria-label="${getLabel(key)}"]`);
+                    if (input) {
+                        input.value = value;
+                        // Trigger change event
+                        const event = new Event('change', { bubbles: true });
+                        input.dispatchEvent(event);
+                    }
+                }
+            });
+        }
+    }
+
+    // Helper function untuk mendapatkan label input
+    function getLabel(key) {
+        const labels = {
+            'tma': 'Tinggi Muka Air Waduk (mdpl)',
+            'trc': 'Tailrace (mdpl)',
+            'hjv_kiri': 'HCV Kiri (%)',
+            'hjv_kanan': 'HCV Kanan (%)',
+            'beban_1': 'Beban Unit I (mW)',
+            'beban_2': 'Beban Unit II (mW)',
+            'beban_3': 'Beban Unit III (mW)',
+            'beban_4': 'Beban Unit IV (mW)', 
+            'beban_5': 'Beban Unit V (mW)',
+            'beban_6': 'Beban Unit VI (mW)'
+        };
+        return labels[key];
+    }
+
+    // Auto-save setiap 30 detik
+    setInterval(simpanDataForm, 30000);
+    
+    // Pulihkan data saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', pulihkanDataForm);
+    
+    // Simpan data sebelum halaman ditutup
+    window.addEventListener('beforeunload', simpanDataForm);
+</script>
+""", unsafe_allow_html=True)
+
+# Tambahkan tombol untuk menghapus data tersimpan
+if st.button("Hapus Data Tersimpan"):
+    st.markdown("""
+    <script>
+        localStorage.removeItem('formData');
+        window.location.reload();
+    </script>
+    """, unsafe_allow_html=True)
+
 st.title("Perhitungan Debit Sesaat Bendungan Ir. H. Djuanda")
 
 # Create tabs for navigation
